@@ -1,5 +1,3 @@
-
-
 <?php
 $example_persons_array = [
     [
@@ -49,11 +47,14 @@ $example_persons_array = [
 ];
 
 // Разбиение и объединение ФИО
-function getFullnameFromParts($person) {
-    return $person['fullname'];
+// Исправленная функция getFullnameFromParts
+function getFullnameFromParts($surname, $name, $patronymic)
+{
+    return $surname . ' ' . $name . ' ' . $patronymic;
 }
 
-function getPartsFromFullName($fullname) {
+function getPartsFromFullName($fullname)
+{
     $parts = explode(' ', $fullname);
     return [
         'surname' => $parts[0],
@@ -63,13 +64,15 @@ function getPartsFromFullName($fullname) {
 }
 
 //Сокращение ФИО
-function getShortName($fullname) {
+function getShortName($fullname)
+{
     $parts = getPartsFromFullName($fullname);
     return $parts['name'] . ' ' . mb_substr($parts['surname'], 0, 1) . '.';
 }
 
 //Определение пола по ФИО
-function getGenderFromName($fullname) {
+function getGenderFromName($fullname)
+{
     $parts = getPartsFromFullName($fullname);
     $genderScore = 0;
 
@@ -106,7 +109,8 @@ function getGenderFromName($fullname) {
 }
 
 //Определение возрастно-полового состава
-function getGenderDescription($personsArray) {
+function getGenderDescription($personsArray)
+{
     $genderCounts = ['Мужской пол' => 0, 'Женский пол' => 0, 'Неопределенный пол' => 0];
     $totalPersons = count($personsArray);
 
@@ -127,45 +131,48 @@ function getGenderDescription($personsArray) {
     $undefinedPercentage = ($genderCounts['Неопределенный пол'] / $totalPersons) * 100;
 
     return "Гендерный состав аудитории:\n" .
-           "Мужчины - " . round($malePercentage, 1) . "%\n" .
-           "Женщины - " . round($femalePercentage, 1) . "%\n" .
-           "Не удалось определить - " . round($undefinedPercentage, 1) . "%";
+        "Мужчины - " . round($malePercentage, 1) . "%\n" .
+        "Женщины - " . round($femalePercentage, 1) . "%\n" .
+        "Не удалось определить - " . round($undefinedPercentage, 1) . "%";
 }
 
 //Идеальный подбор пары
-function getPerfectPartner($surname, $name, $patronymic, $personsArray) {
+// Исправленная функция getPerfectPartner
+function getPerfectPartner($surname, $name, $patronymic, $personsArray)
+{
     // Нормализация фамилии, имени и отчества
-    $normalizedFullName = mb_convert_case($surname, MB_CASE_TITLE, "UTF-8") . ' ' . 
-                          mb_convert_case($name, MB_CASE_TITLE, "UTF-8") . ' ' . 
-                          mb_convert_case($patronymic, MB_CASE_TITLE, "UTF-8");
+    $normalizedFullName = mb_convert_case($surname, MB_CASE_TITLE, "UTF-8") . ' ' .
+        mb_convert_case($name, MB_CASE_TITLE, "UTF-8") . ' ' .
+        mb_convert_case($patronymic, MB_CASE_TITLE, "UTF-8");
 
     $ownGender = getGenderFromName($normalizedFullName);
+    if ($ownGender === 'Неопределенный пол') {
+        return "Пол для '{$normalizedFullName}' не может быть определен";
+    }
 
     do {
         $randomPerson = $personsArray[rand(0, count($personsArray) - 1)];
-        $randomPersonFullName = getFullnameFromParts($randomPerson);
+        $randomPersonFullName = getFullnameFromParts($randomPerson['surname'], $randomPerson['name'], $randomPerson['patronymic']);
         $randomPersonGender = getGenderFromName($randomPersonFullName);
     } while ($ownGender === $randomPersonGender || $randomPersonGender === 'Неопределенный пол');
 
     $compatibility = rand(5000, 10000) / 100;
 
-    return getShortName($normalizedFullName) . ' + ' . getShortName($randomPersonFullName) . 
-           ' = Идеально на ' . number_format($compatibility, 2) . '% ©';
+    return getShortName($normalizedFullName) . ' + ' . getShortName($randomPersonFullName) .
+        ' = Идеально на ' . number_format($compatibility, 2) . '% ©';
 }
 
 // Пример использования функций
-// Пройдемся по всем элементам массива
 foreach ($example_persons_array as $person) {
-    $fullname = getFullnameFromParts($person);
+    $fullname = getFullnameFromParts($person['surname'], $person['name'], $person['patronymic']);
     $parts = getPartsFromFullName($fullname);
     $shortname = getShortName($fullname);
     $gender = getGenderFromName($fullname);
 
     echo $fullname . "\n"; // Выводит полное имя
-    echo $shortname ."\n";
+    echo $shortname . "\n";
     echo $gender . "\n";
     print_r($parts); // Выводит разбиение на фамилию, имя, отчество
 }
 echo getGenderDescription($example_persons_array) . "\n";
 echo getPerfectPartner('иванов', 'иван', 'иванович', $example_persons_array);
-
